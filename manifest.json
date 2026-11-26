@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "sddamico.sundown",
+  "name": "Sundown",
+  "version": "1.0.0",
+  "author": "sddamico",
+  "license": "MIT",
+  "description": "Fades the night light in after sunset and out before sunrise, from your Omarchy weather location.",
+  "repository": "https://github.com/sddamico/omarchy-sundown",
+  "kinds": [
+    "service"
+  ],
+  "entryPoints": {
+    "service": "Service.qml"
+  }
+}

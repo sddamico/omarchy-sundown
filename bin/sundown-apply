@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# Usage: sundown-apply <kelvin>
+#
+# Sends the temperature to hyprsunset only when it differs from the last one
+# sent to that hyprsunset process. A manual `omarchy toggle nightlight` between
+# two fade steps is therefore left alone until the schedule next moves.
+
+set -uo pipefail
+
+DAY_TEMPERATURE=6500
+STATE_FILE="${XDG_RUNTIME_DIR:?}/sundown-applied"
+
+target=${1:-}
+[[ $target =~ ^[0-9]+$ ]] || { echo "usage: sundown-apply <kelvin>" >&2; exit 1; }
+
+current_temperature() {
+  hyprctl hyprsunset temperature 2>/dev/null | grep -oE '[0-9]+' | head -n1
+}
+
+starting=false
+if ! pgrep -x hyprsunset >/dev/null; then
+  setsid uwsm-app -- hyprsunset >/dev/null 2>&1 &
+  starting=true
+  sleep 1
+fi
+pid=$(pgrep -nx hyprsunset) || { echo "sundown-apply: hyprsunset did not start" >&2; exit 1; }
+
+applied=""
+[[ -f $STATE_FILE ]] && applied=$(<"$STATE_FILE")
+[[ $applied == "$pid $target" ]] && exit 0
+
+# A freshly started hyprsunset applies its default temperature at the end of
+# its boot, overriding anything set before then, so resend until it sticks.
+for _ in {1..10}; do
+  hyprctl hyprsunset temperature "$target" >/dev/null 2>&1
+  [[ $starting == false && $(current_temperature) == "$target" ]] && break
+  sleep 0.2
+  [[ $(current_temperature) == "$target" ]] && break
+done
+
+[[ $(current_temperature) == "$target" ]] || { echo "sundown-apply: hyprsunset did not take ${target}K" >&2; exit 1; }
+
+# Even 6500K tints the screen, so daylight also resets to the identity matrix;
+# hyprsunset keeps reporting 6500K, which Omarchy's indicator reads as off
+if (( target == DAY_TEMPERATURE )); then
+  hyprctl hyprsunset identity >/dev/null 2>&1
+fi
+
+echo "$pid $target" >"$STATE_FILE"
+omarchy-shell -q nightlight refresh
