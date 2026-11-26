@@ -18,6 +18,16 @@ omarchy weather location --set "New York" 40.7128,-74.0060
 
 A location with only a name, or one left on IP auto-detect, has no coordinates and Sundown stays idle until it gets them.
 
+It uses only what ships with Omarchy: hyprsunset, `hyprctl` and `uwsm-app`. It makes no network requests and writes no configuration; its one file is a runtime marker in `$XDG_RUNTIME_DIR`.
+
+## Remove
+
+```bash
+omarchy plugin remove sddamico.sundown
+```
+
+The screen keeps the temperature it had at that moment. `omarchy toggle nightlight` switches it back.
+
 ## How it behaves
 
 - From sunrise to sunset the screen is untouched
